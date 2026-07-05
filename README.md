@@ -101,6 +101,9 @@ claude plugin marketplace add YOUR_GITHUB/lucid-context
 claude plugin install lucid-context@lucid-context
 ```
 
+No post-install build step is required for end users. Runtime bundles are
+committed so the MCP server can start directly from the marketplace checkout.
+
 The same commands work inside Claude Code with slash commands:
 
 ```text

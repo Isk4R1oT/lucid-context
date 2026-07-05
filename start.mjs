@@ -187,7 +187,7 @@ if (cacheMatch) {
 
         const ip = JSON.parse(readFileSync(ipPath, "utf-8"));
         for (const [key, entries] of Object.entries(ip.plugins || {})) {
-          if (key !== "context-mode@context-mode") continue;
+          if (key !== "lucid-context@lucid-context") continue;
           for (const entry of entries) {
             entry.installPath = newestDir;
             entry.version = newest;
@@ -203,7 +203,7 @@ if (cacheMatch) {
     if (existsSync(ipPath)) {
       const ip = JSON.parse(readFileSync(ipPath, "utf-8"));
       for (const [key, entries] of Object.entries(ip.plugins || {})) {
-        if (key !== "context-mode@context-mode") continue;
+        if (key !== "lucid-context@lucid-context") continue;
         for (const entry of entries) {
           const rp = entry.installPath;
           if (!rp || existsSync(rp) || rp === __dirname) continue;
@@ -240,7 +240,7 @@ if (cacheMatch) {
 try {
   const { healInstalledPlugins, healSettingsEnabledPlugins, healPluginJsonMcpServers, sweepStaleMcpJson } =
     await import("./scripts/heal-installed-plugins.mjs");
-  const pluginKey = "context-mode@context-mode";
+  const pluginKey = "lucid-context@lucid-context";
   const claudeConfigDir = resolveClaudeConfigDir();
   const registryPath = resolve(claudeConfigDir, "plugins", "installed_plugins.json");
   const pluginCacheRoot = resolve(claudeConfigDir, "plugins", "cache");
@@ -311,15 +311,15 @@ try {
   // disables the heal AND creates an unwanted ~/.claude directory.
   const claudeConfigDir = resolveClaudeConfigDir();
   const globalHooksDir = resolve(claudeConfigDir, "hooks");
-  const healHookPath = resolve(globalHooksDir, "context-mode-cache-heal.mjs");
+  const healHookPath = resolve(globalHooksDir, "lucid-context-cache-heal.mjs");
   // Clean up old bash version if it exists
-  const oldBashHook = resolve(globalHooksDir, "context-mode-cache-heal.sh");
+  const oldBashHook = resolve(globalHooksDir, "lucid-context-cache-heal.sh");
   if (existsSync(oldBashHook)) {
     try { unlinkSync(oldBashHook); } catch {}
   }
   if (!existsSync(globalHooksDir)) mkdirSync(globalHooksDir, { recursive: true });
   const healScript = `#!/usr/bin/env node
-// context-mode plugin cache self-heal (auto-deployed)
+// lucid-context plugin cache self-heal (auto-deployed)
 // Fixes anthropics/claude-code#46915: auto-update breaks CLAUDE_PLUGIN_ROOT
 // Issue #727: also normalizes stale version paths in existing installPaths
 // Honors CLAUDE_CONFIG_DIR (#577) — checked at this script's runtime so users
@@ -335,7 +335,7 @@ try{
   const cacheRoot=resolve(cfgDir(),"plugins","cache");
   const ip=JSON.parse(readFileSync(f,"utf-8"));
   for(const[k,es]of Object.entries(ip.plugins||{})){
-    if(k!=="context-mode@context-mode")continue;
+    if(k!=="lucid-context@lucid-context")continue;
     for(const e of es){
       const p=e.installPath;
       if(!p)continue;
@@ -392,7 +392,7 @@ try{
     const hooks = settings.hooks ?? {};
     const sessionStart = hooks.SessionStart ?? [];
     const alreadyRegistered = sessionStart.some((h) =>
-      h.hooks?.some((hh) => hh.command?.includes("context-mode-cache-heal")),
+      h.hooks?.some((hh) => hh.command?.includes("lucid-context-cache-heal")),
     );
     if (!alreadyRegistered) {
       sessionStart.push({

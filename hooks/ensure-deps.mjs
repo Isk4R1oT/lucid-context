@@ -64,9 +64,29 @@ function hasModernSqlite() {
   return major > 22 || (major === 22 && minor >= 5);
 }
 
+function hasModernSqliteWithFts5() {
+  if (typeof globalThis.Bun !== "undefined") return true;
+  if (!hasModernSqlite()) return false;
+  try {
+    const req = createRequire(resolve(root, "package.json"));
+    const { DatabaseSync } = req(["node", "sqlite"].join(":"));
+    const probe = new DatabaseSync(":memory:");
+    try {
+      probe.exec("CREATE VIRTUAL TABLE __fts5_probe USING fts5(x)");
+      return true;
+    } finally {
+      try { probe.close(); } catch { /* ignore */ }
+    }
+  } catch {
+    return false;
+  }
+}
+
 export async function ensureDeps() {
-  // Bun ships bun:sqlite and never needs better-sqlite3
-  if (typeof globalThis.Bun !== "undefined") return;
+  // Bun and modern Node with FTS5 can use built-in SQLite. Marketplace
+  // installs should not block MCP startup on native addon installation when
+  // the runtime already has the database engine the server will choose.
+  if (hasModernSqliteWithFts5()) return;
   for (const pkg of NATIVE_DEPS) {
     const pkgDir = resolve(root, "node_modules", pkg);
     if (!existsSync(pkgDir)) {
