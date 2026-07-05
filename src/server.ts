@@ -33,6 +33,7 @@ import { classifyNonZeroExit } from "./exit-classify.js";
 import { startLifecycleGuard, noteMcpActivity, noteRequestStart, noteRequestEnd, attachMcpActivityTap } from "./lifecycle.js";
 import { charSafePrefix } from "./truncate.js";
 import { OUTPUT_MODES, summarizeDiagnostics, type OutputMode } from "./output-mode.js";
+import { previewMatchLine } from "./preview.js";
 import {
   describeStorageDirectorySource,
   ensureWritableStorageDir,
@@ -2091,12 +2092,9 @@ function intentSearch(
   ];
 
   for (const r of results) {
-    // Preview a window around the matched terms — not the chunk's first line,
-    // which hides the real hit when the match is buried mid-chunk (e.g. a needle
-    // line inside a large indexed output). Collapse to one compact line.
-    const preview = extractSnippet(r.content, intent, 160, r.highlighted)
-      .replace(/\s+/g, " ")
-      .trim();
+    // Preview the line carrying the rarest matched query term, so a distinctive
+    // mid-chunk needle stays visible instead of the chunk's (common) first line.
+    const preview = previewMatchLine(r.content, intent, 160);
     lines.push(`  - ${r.title}: ${preview}`);
   }
 
