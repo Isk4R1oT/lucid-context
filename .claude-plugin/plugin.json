@@ -1,0 +1,30 @@
+{
+  "name": "lucid-context",
+  "version": "1.0.166",
+  "description": "Context optimizer for coding agents. Preserves diagnostics while keeping raw tool output out of the conversation.",
+  "author": {
+    "name": "Lucid Context contributors"
+  },
+  "homepage": "https://github.com/lucid-context/lucid-context#readme",
+  "repository": "https://github.com/lucid-context/lucid-context",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "mcp",
+    "context-window",
+    "sandbox",
+    "code-execution",
+    "fts5",
+    "bm25",
+    "playwright",
+    "context7"
+  ],
+  "mcpServers": {
+    "lucid-context": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/start.mjs"
+      ]
+    }
+  },
+  "skills": "./skills/"
+}
