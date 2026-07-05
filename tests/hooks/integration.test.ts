@@ -495,7 +495,7 @@ describe("Security Policy Enforcement", () => {
   test("Security: MCP execute + shell + sudo denied", () => {
     const result = runHook(
       {
-        tool_name: "mcp__plugin_context-mode_context-mode__ctx_execute",
+        tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_execute",
         tool_input: { language: "shell", code: "sudo rm -rf /" },
       },
       secEnv,
@@ -508,7 +508,7 @@ describe("Security Policy Enforcement", () => {
   test("Security: MCP execute + python (non-shell) passthrough", () => {
     const result = runHook(
       {
-        tool_name: "mcp__plugin_context-mode_context-mode__ctx_execute",
+        tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_execute",
         tool_input: { language: "python", code: "print('hello')" },
       },
       secEnv,
@@ -524,7 +524,7 @@ describe("Security Policy Enforcement", () => {
       const result = runHook(
         {
           cwd: worktree,
-          tool_name: "mcp__plugin_context-mode_context-mode__ctx_execute",
+          tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_execute",
           tool_input: { language: "shell", code: "pwd" },
         },
         { ...secEnv, CLAUDE_PROJECT_DIR: mainRepo },
@@ -542,7 +542,7 @@ describe("Security Policy Enforcement", () => {
   test("Security: MCP execute_file + .env path denied", () => {
     const result = runHook(
       {
-        tool_name: "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+        tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_execute_file",
         tool_input: { path: ".env", language: "shell", code: "cat" },
       },
       secEnv,
@@ -556,7 +556,7 @@ describe("Security Policy Enforcement", () => {
   test("Security: MCP execute_file + safe path passthrough", () => {
     const result = runHook(
       {
-        tool_name: "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+        tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_execute_file",
         tool_input: { path: "src/app.ts", language: "javascript", code: "console.log('ok')" },
       },
       secEnv,
@@ -568,7 +568,7 @@ describe("Security Policy Enforcement", () => {
   test("Security: MCP execute_file + safe path but sudo in shell code denied", () => {
     const result = runHook(
       {
-        tool_name: "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+        tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_execute_file",
         tool_input: { path: "src/app.sh", language: "shell", code: "sudo rm -rf /" },
       },
       secEnv,
@@ -581,7 +581,7 @@ describe("Security Policy Enforcement", () => {
   test("Security: MCP batch_execute with sudo in one command denied", () => {
     const result = runHook(
       {
-        tool_name: "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+        tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_batch_execute",
         tool_input: {
           commands: [
             { label: "list", command: "ls -la" },
@@ -602,7 +602,7 @@ describe("Security Policy Enforcement", () => {
       const result = runHook(
         {
           cwd: worktree,
-          tool_name: "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+          tool_name: "mcp__plugin_lucid-context_lucid-context__ctx_batch_execute",
           tool_input: {
             commands: [
               { label: "list", command: "ls -la" },
@@ -624,10 +624,10 @@ describe("Security Policy Enforcement", () => {
 describe("Plugin Tool Name Format in ROUTING_BLOCK", () => {
   // When installed via Claude Code plugin marketplace, tool names follow:
   //   mcp__plugin_<plugin-id>_<server-name>__<tool-name>
-  // For context-mode: mcp__plugin_context-mode_context-mode__<tool-name>
+  // For context-mode: mcp__plugin_lucid-context_lucid-context__<tool-name>
   // The short form mcp__context-mode__* only works for direct MCP registration.
 
-  const PLUGIN_PREFIX = "mcp__plugin_context-mode_context-mode__";
+  const PLUGIN_PREFIX = "mcp__plugin_lucid-context_lucid-context__";
   const SHORT_PREFIX = "mcp__context-mode__";
 
   test("Agent routing block uses plugin-format tool names", () => {

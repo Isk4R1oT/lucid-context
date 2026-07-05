@@ -44,7 +44,7 @@ export type HookType = (typeof HOOK_TYPES)[keyof typeof HOOK_TYPES];
  * Claude Code's hook matcher engine treats this entry as a substring match
  * (it also accepts regex, but `mcp__` alone is enough — every MCP tool
  * surfaces as `mcp__<server>__<tool>`). v1.0.124 used a negative lookahead
- * `mcp__(?!plugin_context-mode_)` to skip context-mode's own MCP tools,
+ * `mcp__(?!plugin_lucid-context_)` to skip context-mode's own MCP tools,
  * but this same hooks.json is bundled to Codex CLI which uses Rust's
  * `regex` crate (no look-around support) — Codex rejected the matcher at
  * boot, breaking every Codex user (#547). Drop the lookaround on both
@@ -60,9 +60,9 @@ export const PRE_TOOL_USE_MATCHERS = [
   "Read",
   "Grep",
   "Agent",
-  "mcp__plugin_context-mode_context-mode__ctx_execute",
-  "mcp__plugin_context-mode_context-mode__ctx_execute_file",
-  "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+  "mcp__plugin_lucid-context_lucid-context__ctx_execute",
+  "mcp__plugin_lucid-context_lucid-context__ctx_execute_file",
+  "mcp__plugin_lucid-context_lucid-context__ctx_batch_execute",
   EXTERNAL_MCP_MATCHER_PATTERN,
 ] as const;
 

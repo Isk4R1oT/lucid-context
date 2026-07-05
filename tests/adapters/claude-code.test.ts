@@ -791,7 +791,7 @@ describe("ClaudeCodeAdapter", () => {
     });
 
     it("EXTERNAL_MCP_MATCHER_PATTERN is the literal `mcp__` substring (#529, #547 hotfix)", () => {
-      // v1.0.124 used `mcp__(?!plugin_context-mode_)` — the same hooks.json
+      // v1.0.124 used `mcp__(?!plugin_lucid-context_)` — the same hooks.json
       // is bundled to Codex CLI whose Rust `regex` crate rejects look-around
       // at boot. v1.0.125 drops the lookaround on both adapters; the hook
       // BODY (`isExternalMcpTool()` in hooks/core/routing.mjs) filters

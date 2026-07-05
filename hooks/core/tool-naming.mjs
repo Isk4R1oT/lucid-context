@@ -5,7 +5,7 @@
  * Evidence-based naming conventions (from official docs):
  * | Platform           | Pattern                                                    |
  * |--------------------|------------------------------------------------------------|
- * | Claude Code        | mcp__plugin_context-mode_context-mode__<tool>               |
+ * | Claude Code        | mcp__plugin_lucid-context_lucid-context__<tool>               |
  * | Gemini CLI         | mcp__context-mode__<tool>                                  |
  * | Antigravity        | mcp__context-mode__<tool>                                  |
  * | Antigravity CLI    | context-mode/<tool>                                        |
@@ -17,7 +17,7 @@
  */
 
 const TOOL_PREFIXES = {
-  "claude-code":    (tool) => `mcp__plugin_context-mode_context-mode__${tool}`,
+  "claude-code":    (tool) => `mcp__plugin_lucid-context_lucid-context__${tool}`,
   "gemini-cli":     (tool) => `mcp__context-mode__${tool}`,
   "antigravity":    (tool) => `mcp__context-mode__${tool}`,
   "antigravity-cli": (tool) => `context-mode/${tool}`,

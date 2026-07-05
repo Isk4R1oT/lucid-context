@@ -618,7 +618,7 @@ describe("routePreToolUse", () => {
   describe("MCP execute tools", () => {
     it("passes through non-shell execute", () => {
       const result = routePreToolUse(
-        "mcp__plugin_context-mode_context-mode__ctx_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_execute",
         { language: "javascript", code: "console.log('hello')" },
       );
       expect(result).toBeNull();
@@ -626,7 +626,7 @@ describe("routePreToolUse", () => {
 
     it("passes through execute_file without security", () => {
       const result = routePreToolUse(
-        "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+        "mcp__plugin_lucid-context_lucid-context__ctx_execute_file",
         {
           path: "/some/file.log",
           language: "python",
@@ -638,7 +638,7 @@ describe("routePreToolUse", () => {
 
     it("passes through batch_execute without security", () => {
       const result = routePreToolUse(
-        "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_batch_execute",
         {
           commands: [{ label: "test", command: "ls -la" }],
           queries: ["file list"],
@@ -649,7 +649,7 @@ describe("routePreToolUse", () => {
 
     it("pins Claude Code ctx_execute shell cwd from hook projectDir (#756)", () => {
       const result = routePreToolUse(
-        "mcp__plugin_context-mode_context-mode__ctx_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_execute",
         { language: "shell", code: "pwd" },
         "/worktree/repo",
         "claude-code",
@@ -664,7 +664,7 @@ describe("routePreToolUse", () => {
 
     it("pins Claude Code ctx_batch_execute cwd from hook projectDir (#756)", () => {
       const result = routePreToolUse(
-        "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_batch_execute",
         { commands: [{ label: "branch", command: "git rev-parse --abbrev-ref HEAD" }] },
         "/worktree/repo",
         "claude-code",
@@ -678,7 +678,7 @@ describe("routePreToolUse", () => {
 
     it("does not overwrite explicit ctx_execute cwd", () => {
       const result = routePreToolUse(
-        "mcp__plugin_context-mode_context-mode__ctx_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_execute",
         { language: "shell", code: "pwd", cwd: "/explicit" },
         "/worktree/repo",
         "claude-code",
@@ -850,7 +850,7 @@ describe("routePreToolUse", () => {
 
   // ─── External MCP tools (#529) ──────────────────────────
   //
-  // hooks/hooks.json registers a `mcp__(?!plugin_context-mode_)` matcher so
+  // hooks/hooks.json registers a `mcp__(?!plugin_lucid-context_)` matcher so
   // PreToolUse fires on slack/telegram/gdrive/notion-style MCPs whose payloads
   // would otherwise spill into context before PostToolUse can act. The routing
   // branch emits a one-shot context guidance nudge — same throttle model as
@@ -882,9 +882,9 @@ describe("routePreToolUse", () => {
       // ctx_execute_file, ctx_batch_execute) — they must NOT receive the
       // external-MCP guidance, which would be redundant noise.
       const contextModeTools = [
-        "mcp__plugin_context-mode_context-mode__ctx_execute",
-        "mcp__plugin_context-mode_context-mode__ctx_execute_file",
-        "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_execute",
+        "mcp__plugin_lucid-context_lucid-context__ctx_execute_file",
+        "mcp__plugin_lucid-context_lucid-context__ctx_batch_execute",
         "mcp__context-mode__ctx_execute",
       ];
       for (const tool of contextModeTools) {
