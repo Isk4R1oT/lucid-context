@@ -42,20 +42,34 @@ pnpm exec tsc --noEmit
 pnpm exec vitest run tests/output-mode.test.ts
 ```
 
-## Try in Claude Code from this local checkout
+## Try in Claude Code
 
-For local testing before publishing a GitHub plugin marketplace, use the local
-installer. It writes `mcpServers.lucid-context` and the hook commands into your
-Claude Code `settings.json`, using absolute paths to this checkout.
+Claude Code has a native plugin marketplace. Lucid Context is packaged as one
+plugin bundle: the plugin includes the MCP server, hooks, and skill instructions.
+
+Validate the marketplace:
 
 ```bash
 cd /Users/igor/Documents/ClearOut/lucid-context
 pnpm install
 pnpm run build
-node scripts/install-claude-local.mjs
+claude plugin validate .
 ```
 
-Then in Claude Code:
+Fast local development, without installing anything:
+
+```bash
+claude --plugin-dir /Users/igor/Documents/ClearOut/lucid-context
+```
+
+Local marketplace install, still without GitHub:
+
+```bash
+claude plugin marketplace add /Users/igor/Documents/ClearOut/lucid-context
+claude plugin install lucid-context@lucid-context
+```
+
+Then inside Claude Code:
 
 ```text
 /reload-plugins
@@ -73,19 +87,31 @@ output_mode = "diagnostics"
 Expected: the warning appears in the diagnostic summary even though the command
 exits successfully.
 
-To remove the local Claude Code wiring:
+To uninstall the local marketplace install:
 
 ```bash
-cd /Users/igor/Documents/ClearOut/lucid-context
-node scripts/uninstall-claude-local.mjs
+claude plugin uninstall lucid-context@lucid-context
+claude plugin marketplace remove lucid-context
 ```
 
-After publishing the GitHub marketplace, the install should become:
+After publishing the repository to GitHub, install from the marketplace:
+
+```bash
+claude plugin marketplace add YOUR_GITHUB/lucid-context
+claude plugin install lucid-context@lucid-context
+```
+
+The same commands work inside Claude Code with slash commands:
 
 ```text
 /plugin marketplace add YOUR_GITHUB/lucid-context
 /plugin install lucid-context@lucid-context
+/reload-plugins
 ```
+
+For active development, the Claude plugin manifest intentionally omits a plugin
+`version`; Claude Code will use the git commit SHA as the plugin version, so
+`claude plugin update lucid-context@lucid-context` can pick up new commits.
 
 ## Try in Codex
 

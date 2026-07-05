@@ -4,15 +4,13 @@
     "name": "Lucid Context contributors"
   },
   "metadata": {
-    "description": "Claude Code plugins by Lucid Context contributors",
-    "version": "1.0.166"
+    "description": "Claude Code plugins by Lucid Context contributors"
   },
   "plugins": [
     {
       "name": "lucid-context",
       "source": "./",
       "description": "Claude Code MCP plugin for clear agent context: diagnostic-preserving execution, FTS5 search, and session continuity.",
-      "version": "1.0.166",
       "author": {
         "name": "Lucid Context contributors"
       },
