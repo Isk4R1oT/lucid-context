@@ -2091,7 +2091,12 @@ function intentSearch(
   ];
 
   for (const r of results) {
-    const preview = r.content.split("\n")[0].slice(0, 120);
+    // Preview a window around the matched terms — not the chunk's first line,
+    // which hides the real hit when the match is buried mid-chunk (e.g. a needle
+    // line inside a large indexed output). Collapse to one compact line.
+    const preview = extractSnippet(r.content, intent, 160, r.highlighted)
+      .replace(/\s+/g, " ")
+      .trim();
     lines.push(`  - ${r.title}: ${preview}`);
   }
 

@@ -84,12 +84,22 @@ function countMatches(lines: StreamLine[], rx: RegExp): number {
   return lines.reduce((count, line) => count + (rx.test(line.text) ? 1 : 0), 0);
 }
 
+const FALLBACK_LINE_WIDTH = 200;
+
+// Cap one rendered line so a single very long line (a minified bundle, a
+// one-line JSON payload) cannot fill the whole byte budget with a signal-free
+// prefix. The full line stays retrievable via the indexed source.
+function truncateSampleLine(text: string): string {
+  if (text.length <= FALLBACK_LINE_WIDTH) return text;
+  return `${text.slice(0, FALLBACK_LINE_WIDTH)}… [+${text.length - FALLBACK_LINE_WIDTH} chars]`;
+}
+
 function formatWindow(lines: StreamLine[], range: WindowRange): string[] {
   const out: string[] = [];
   const selected = lines.slice(range.start, range.end + 1);
   for (const line of selected) {
     const lineNumber = String(line.index + 1).padStart(5, " ");
-    out.push(`${line.stream}:${lineNumber}: ${line.text}`);
+    out.push(`${line.stream}:${lineNumber}: ${truncateSampleLine(line.text)}`);
   }
   return out;
 }
@@ -105,7 +115,7 @@ function formatFallbackSample(stdoutLines: StreamLine[], stderrLines: StreamLine
   lines.push("");
   for (const line of sample) {
     const lineNumber = String(line.index + 1).padStart(5, " ");
-    lines.push(`${line.stream}:${lineNumber}: ${line.text}`);
+    lines.push(`${line.stream}:${lineNumber}: ${truncateSampleLine(line.text)}`);
   }
   return lines;
 }

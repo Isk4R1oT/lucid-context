@@ -37,4 +37,26 @@ describe("summarizeDiagnostics", () => {
     expect(Buffer.byteLength(summary)).toBeLessThanOrEqual(2_000);
     expect(summary).toContain("Diagnostic summary");
   });
+
+  test("truncates a single very long line in the no-match sample", () => {
+    const stdout = "x".repeat(200_000); // one giant line, no diagnostic keyword
+    const summary = summarizeDiagnostics({
+      stdout,
+      exitCode: 0,
+      sourceLabel: "execute:shell:diagnostics",
+    });
+
+    expect(summary).toContain("No diagnostic lines matched");
+    expect(summary).toContain("chars]"); // per-line truncation marker
+    expect(Buffer.byteLength(summary)).toBeLessThan(2_000); // giant line did not leak
+  });
+
+  test("truncates a very long line inside a matched diagnostic window", () => {
+    const stdout = `prefix error: ${"y".repeat(200_000)}`;
+    const summary = summarizeDiagnostics({ stdout, exitCode: 1 });
+
+    expect(summary).toContain("Matched diagnostic windows");
+    expect(summary).toContain("chars]");
+    expect(Buffer.byteLength(summary)).toBeLessThan(2_000);
+  });
 });
