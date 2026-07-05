@@ -34,6 +34,7 @@ import { startLifecycleGuard, noteMcpActivity, noteRequestStart, noteRequestEnd,
 import { charSafePrefix } from "./truncate.js";
 import { OUTPUT_MODES, summarizeDiagnostics, type OutputMode } from "./output-mode.js";
 import { previewMatchLine } from "./preview.js";
+import { uniqueSourceLabel } from "./source-label.js";
 import {
   describeStorageDirectorySource,
   ensureWritableStorageDir,
@@ -1543,7 +1544,7 @@ function combineExecOutput(result: { stdout?: string; stderr?: string }): string
 function indexExecutionOutput(output: string, source: string): string {
   const store = getStore();
   trackIndexed(Buffer.byteLength(output));
-  const indexed = store.indexPlainText(output, source, undefined, currentAttribution());
+  const indexed = store.indexPlainText(output, uniqueSourceLabel(source), undefined, currentAttribution());
   return indexed.label;
 }
 
@@ -2033,7 +2034,7 @@ function indexStdout(
 ): { content: Array<{ type: "text"; text: string }> } {
   const store = getStore();
   trackIndexed(Buffer.byteLength(stdout));
-  const indexed = store.index({ content: stdout, source, attribution: currentAttribution() });
+  const indexed = store.index({ content: stdout, source: uniqueSourceLabel(source), attribution: currentAttribution() });
   return {
     content: [
       {
@@ -2060,19 +2061,23 @@ function intentSearch(
   const totalLines = stdout.split("\n").length;
   const totalBytes = Buffer.byteLength(stdout);
 
+  // Unique per-run label so ctx_search(source: …) scopes to THIS run while the
+  // base still prefix-matches every run. Index, search, and display all use it.
+  const label = uniqueSourceLabel(source);
+
   // Index into the PERSISTENT store so user can ctx_search() later
   const persistent = getStore();
-  const indexed = persistent.indexPlainText(stdout, source, undefined, currentAttribution());
+  const indexed = persistent.indexPlainText(stdout, label, undefined, currentAttribution());
 
   // Search the persistent store directly (porter → trigram → fuzzy)
-  let results = persistent.searchWithFallback(intent, maxResults, source);
+  let results = persistent.searchWithFallback(intent, maxResults, label);
 
   // Extract distinctive terms as vocabulary hints for the LLM
   const distinctiveTerms = persistent.getDistinctiveTerms(indexed.sourceId);
 
   if (results.length === 0) {
     const lines = [
-      `Indexed ${indexed.totalChunks} sections from "${source}" into knowledge base.`,
+      `Indexed ${indexed.totalChunks} sections from "${label}" into knowledge base.`,
       `No sections matched intent "${intent}" in ${totalLines}-line output (${(totalBytes / 1024).toFixed(1)}KB).`,
     ];
     if (distinctiveTerms.length > 0) {
