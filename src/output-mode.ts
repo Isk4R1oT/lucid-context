@@ -1,4 +1,4 @@
-import { capBytes } from "./truncate.js";
+import { capBytes, charSafePrefix } from "./truncate.js";
 
 export const OUTPUT_MODES = ["auto", "diagnostics", "compact", "full", "index"] as const;
 export type OutputMode = (typeof OUTPUT_MODES)[number];
@@ -91,7 +91,8 @@ const FALLBACK_LINE_WIDTH = 200;
 // prefix. The full line stays retrievable via the indexed source.
 function truncateSampleLine(text: string): string {
   if (text.length <= FALLBACK_LINE_WIDTH) return text;
-  return `${text.slice(0, FALLBACK_LINE_WIDTH)}… [+${text.length - FALLBACK_LINE_WIDTH} chars]`;
+  const prefix = charSafePrefix(text, FALLBACK_LINE_WIDTH);
+  return `${prefix}… [+${text.length - prefix.length} chars]`;
 }
 
 function formatWindow(lines: StreamLine[], range: WindowRange): string[] {

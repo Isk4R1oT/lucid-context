@@ -8,6 +8,8 @@
  * (which occurs once) wins over common words that match every line.
  */
 
+import { charSafePrefix } from "./truncate.js";
+
 /**
  * Return the query term with the fewest — but non-zero — occurrences in
  * `content`, preserving its original case. Terms shorter than 3 chars are
@@ -42,7 +44,7 @@ export function rarestQueryTerm(query: string, content: string): string | undefi
 export function previewMatchLine(content: string, query: string, maxLen: number): string {
   const lines = content.split("\n");
   const cap = (line: string): string =>
-    line.length > maxLen ? `${line.slice(0, maxLen)}…` : line;
+    line.length > maxLen ? `${charSafePrefix(line, maxLen)}…` : line;
 
   const term = rarestQueryTerm(query, content);
   if (term) {

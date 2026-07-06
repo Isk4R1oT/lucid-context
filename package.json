@@ -1,6 +1,6 @@
 {
   "name": "lucid-context",
-  "version": "1.0.167",
+  "version": "1.0.170",
   "type": "module",
   "description": "Context optimizer for coding agents. Keeps raw tool output out of the conversation while preserving diagnostics, warnings, and searchable session memory.",
   "author": "Lucid Context contributors",
