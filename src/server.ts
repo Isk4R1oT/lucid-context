@@ -35,6 +35,7 @@ import { charSafePrefix } from "./truncate.js";
 import { OUTPUT_MODES, summarizeDiagnostics, type OutputMode } from "./output-mode.js";
 import { previewMatchLine } from "./preview.js";
 import { uniqueSourceLabel } from "./source-label.js";
+import { pageLines } from "./pager.js";
 import {
   describeStorageDirectorySource,
   ensureWritableStorageDir,
@@ -2305,6 +2306,86 @@ EXAMPLE: ctx_execute_file(path: "data.csv", language: "javascript", code: "const
         isError: true,
       });
     }
+  },
+);
+
+// ─────────────────────────────────────────────────────────
+// Tool: read (paged, full-fidelity)
+// ─────────────────────────────────────────────────────────
+
+server.registerTool(
+  "ctx_read",
+  {
+    title: "Read (paged, full-fidelity)",
+    // Pure read: returns file bytes, never executes or mutates. Unlike
+    // ctx_execute_file it is NOT project-confined — it is the faithful-read
+    // counterpart to the native Read tool, not a code-execution surface.
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    description: `Read a file one PAGE at a time, every line IN FULL — the faithful counterpart to ctx_execute's diagnostics/summary path. Nothing is filtered, keyword-matched, or dropped; the page is bounded by a byte budget so it never floods context, and by a per-line cap so one enormous line cannot blow the page. Reports where to continue so you can walk a file end to end.
+
+WHEN:
+  - You need to STUDY output line by line, not derive an answer from it: a JSONL agent-eval trace, a captured research page, a transcript, a structured log you are reading for understanding
+  - The important content carries NO error/warn/fail keyword (a decision, a final answer, a silently-wrong output) so diagnostics mode would eat it
+  - The file has fat single lines (a JSONL event with a large payload) that native Read would dump in full and flood context
+
+WHEN NOT:
+  - You want to DERIVE an aggregate/answer FROM the file (counts, filters, matches) — use ctx_execute_file, which processes in-sandbox and prints only the result
+  - The file is small AND you will edit it — use the native Read tool so a later Edit can match exact bytes
+
+RETURNS:
+  A header (path, "Lines X-Y of Z", the exact ctx_read(offset:) call to continue, and any long lines that were capped) followed by the line-numbered page verbatim.
+
+EXAMPLE: ctx_read(path: "/abs/run.jsonl")                            // first page
+EXAMPLE: ctx_read(path: "/abs/run.jsonl", offset: 201, limit: 200)   // next page`,
+    inputSchema: z.object({
+      path: z
+        .string()
+        .describe("Absolute path to the file to read (relative paths resolve from the server cwd)."),
+      offset: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("1-based line to start at (default 1)."),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Maximum lines per page (default 200; the byte budget may return fewer)."),
+    }),
+  },
+  async ({ path, offset, limit }) => {
+    const abs = resolve(path);
+    let content: string;
+    try {
+      content = readFileSync(abs, "utf8");
+    } catch (e) {
+      return trackResponse("ctx_read", {
+        content: [
+          { type: "text" as const, text: `Cannot read "${path}": ${(e as Error).message}` },
+        ],
+        isError: true,
+      });
+    }
+    const page = pageLines(content, offset ?? 1, limit ?? 200, 12_000, 4_000);
+    const cont =
+      page.nextOffset !== null
+        ? `continue: ctx_read(path: "${path}", offset: ${page.nextOffset})`
+        : "(end of file)";
+    const capped =
+      page.truncatedLines.length > 0
+        ? ` · long lines capped: ${page.truncatedLines.join(", ")}`
+        : "";
+    const header = `${path}\nLines ${page.start}-${page.end} of ${page.total} · ${cont}${capped}`;
+    return trackResponse("ctx_read", {
+      content: [{ type: "text" as const, text: `${header}\n\n${page.text}` }],
+    });
   },
 );
 
