@@ -3355,7 +3355,11 @@ describe("runBatchCommands edge cases", () => {
 
   test("buildBatchNodeOptionsPrefix formats POSIX shell assignment", () => {
     const prefix = buildBatchNodeOptionsPrefix("bash", "/tmp/cm fs'preload.js");
-    expect(prefix).toBe("NODE_OPTIONS='--require /tmp/cm fs'\\''preload.js' ");
+    // `export …\n` (own line), NOT an inline `VAR=val ` prefix — so gluing a
+    // compound command (for/while/if) after it stays valid shell (#batch-compound).
+    expect(prefix).toBe("export NODE_OPTIONS='--require /tmp/cm fs'\\''preload.js'\n");
+    expect(prefix.endsWith("\n")).toBe(true);
+    expect(prefix.startsWith("export ")).toBe(true);
   });
 
   test("buildBatchNodeOptionsPrefix formats PowerShell assignment", () => {
@@ -6677,6 +6681,7 @@ describe("ctx_* MCP tool annotations (#846)", () => {
     ctx_execute_file:    { readOnlyHint: false, destructiveHint: true,  idempotentHint: false, openWorldHint: true  },
     ctx_index:           { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     ctx_search:          { readOnlyHint: true,  destructiveHint: false, idempotentHint: true,  openWorldHint: false },
+    ctx_read:            { readOnlyHint: true,  destructiveHint: false, idempotentHint: true,  openWorldHint: false },
     ctx_fetch_and_index: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true  },
     ctx_batch_execute:   { readOnlyHint: false, destructiveHint: true,  idempotentHint: false, openWorldHint: true  },
     ctx_stats:           { readOnlyHint: true,  destructiveHint: false, idempotentHint: true,  openWorldHint: false },

@@ -1458,7 +1458,12 @@ export function buildBatchNodeOptionsPrefix(shellPath: string, preloadPath: stri
     return `set "NODE_OPTIONS=${option.replace(/"/g, '""')}" && `;
   }
 
-  return `NODE_OPTIONS=${quotePosixSingle(option)} `;
+  // `export` on its OWN line (newline-terminated), NOT an inline `VAR=val `
+  // assignment prefix. An inline assignment is only legal before a SIMPLE
+  // command; gluing it onto a compound command (`for`/`while`/`if`/`case`/`{`)
+  // yields "syntax error near 'for'" (#batch-compound-command). A terminated
+  // export applies to the whole script and leaves the command starting clean.
+  return `export NODE_OPTIONS=${quotePosixSingle(option)}\n`;
 }
 
 /**
