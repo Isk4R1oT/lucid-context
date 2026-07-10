@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createRequire } from "node:module";
-import { existsSync, unlinkSync, readdirSync, readFileSync, writeFileSync, writeSync, renameSync, rmSync, mkdirSync, cpSync, statSync, symlinkSync, lstatSync, realpathSync } from "node:fs";
+import { existsSync, unlinkSync, readdirSync, readFileSync, writeFileSync, writeSync, renameSync, rmSync, mkdirSync, cpSync, statSync, symlinkSync, lstatSync, realpathSync, openSync, readSync, closeSync } from "node:fs";
 import { spawnSync, type SpawnSyncOptions, type SpawnSyncReturns } from "node:child_process";
 import { join, dirname, resolve, sep, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,7 +35,7 @@ import { charSafePrefix } from "./truncate.js";
 import { OUTPUT_MODES, summarizeDiagnostics, type OutputMode } from "./output-mode.js";
 import { previewMatchLine } from "./preview.js";
 import { uniqueSourceLabel } from "./source-label.js";
-import { pageLines } from "./pager.js";
+import { pageFileStream } from "./pager.js";
 import {
   describeStorageDirectorySource,
   ensureWritableStorageDir,
@@ -2362,18 +2362,65 @@ EXAMPLE: ctx_read(path: "/abs/run.jsonl", offset: 201, limit: 200)   // next pag
   },
   async ({ path, offset, limit }) => {
     const abs = resolve(path);
-    let content: string;
+
+    let st: ReturnType<typeof statSync>;
     try {
-      content = readFileSync(abs, "utf8");
+      st = statSync(abs);
     } catch (e) {
       return trackResponse("ctx_read", {
-        content: [
-          { type: "text" as const, text: `Cannot read "${path}": ${(e as Error).message}` },
-        ],
+        content: [{ type: "text" as const, text: `Cannot read "${path}": ${(e as Error).message}` }],
         isError: true,
       });
     }
-    const page = pageLines(content, offset ?? 1, limit ?? 200, 12_000, 4_000);
+    if (st.isDirectory()) {
+      return trackResponse("ctx_read", {
+        content: [{ type: "text" as const, text: `"${path}" is a directory — pass a file path.` }],
+        isError: true,
+      });
+    }
+
+    // Sniff the head so readline never buffers a null-laden or newline-free giant
+    // "line" into memory. This guard is what lets ctx_read stream a file of ANY
+    // size (it reads only up to the requested page, never the whole file).
+    let head = "";
+    try {
+      const fd = openSync(abs, "r");
+      const buf = Buffer.alloc(8192);
+      const n = readSync(fd, buf, 0, 8192, 0);
+      closeSync(fd);
+      head = buf.subarray(0, n).toString("latin1");
+    } catch {
+      // fall through — the stream below surfaces any real read error
+    }
+    if (head.indexOf(String.fromCharCode(0)) !== -1) {
+      return trackResponse("ctx_read", {
+        content: [{ type: "text" as const, text: `"${path}" looks binary (null bytes). ctx_read handles UTF-8 text only — use ctx_execute_file to process it.` }],
+        isError: true,
+      });
+    }
+    if (!head.includes("\n") && st.size > 5 * 1024 * 1024) {
+      return trackResponse("ctx_read", {
+        content: [{ type: "text" as const, text: `"${path}" has no line break in its first 8KB and is ${(st.size / 1048576).toFixed(1)}MB — likely minified / one giant line. Use ctx_execute_file to process it, not ctx_read.` }],
+        isError: true,
+      });
+    }
+
+    let page: Awaited<ReturnType<typeof pageFileStream>>;
+    try {
+      page = await pageFileStream(abs, offset ?? 1, limit ?? 200, 12_000, 4_000);
+    } catch (e) {
+      return trackResponse("ctx_read", {
+        content: [{ type: "text" as const, text: `Cannot read "${path}": ${(e as Error).message}` }],
+        isError: true,
+      });
+    }
+
+    if (page.text.length === 0) {
+      return trackResponse("ctx_read", {
+        content: [{ type: "text" as const, text: `${path}\nNo lines at offset ${offset ?? 1} (at or past end of file).` }],
+      });
+    }
+
     const cont =
       page.nextOffset !== null
         ? `continue: ctx_read(path: "${path}", offset: ${page.nextOffset})`
@@ -2382,7 +2429,7 @@ EXAMPLE: ctx_read(path: "/abs/run.jsonl", offset: 201, limit: 200)   // next pag
       page.truncatedLines.length > 0
         ? ` · long lines capped: ${page.truncatedLines.join(", ")}`
         : "";
-    const header = `${path}\nLines ${page.start}-${page.end} of ${page.total} · ${cont}${capped}`;
+    const header = `${path}\nLines ${page.start}-${page.end} (${(st.size / 1024).toFixed(0)}KB file) · ${cont}${capped}`;
     return trackResponse("ctx_read", {
       content: [{ type: "text" as const, text: `${header}\n\n${page.text}` }],
     });
@@ -2615,8 +2662,8 @@ function readPositiveEnv(name: string, defaultValue: number): number {
 }
 
 const SEARCH_WINDOW_MS = readPositiveEnv("CONTEXT_MODE_SEARCH_WINDOW_MS", 60_000);
-const SEARCH_MAX_RESULTS_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_MAX_RESULTS_AFTER", 8); // after N calls: 1 result per query
-const SEARCH_BLOCK_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_BLOCK_AFTER", 20); // after N calls: refuse, demand batching
+const SEARCH_MAX_RESULTS_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_MAX_RESULTS_AFTER", 25); // after N calls: 1 result per query
+const SEARCH_BLOCK_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_BLOCK_AFTER", 60); // after N calls: refuse, demand batching
 
 // #769: progressive throttle bucketed PER agent-context, not machine-global.
 // Concurrent subagents share ONE MCP server process; a single global counter

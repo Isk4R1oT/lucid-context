@@ -14,6 +14,9 @@
  * reports where to continue so the reader can walk the file end to end.
  */
 
+import { createReadStream } from "node:fs";
+import { createInterface } from "node:readline";
+
 import { charSafePrefix } from "./truncate.js";
 
 export interface PageResult {
@@ -93,6 +96,79 @@ export function pageLines(
     end,
     total,
     nextOffset: end < total ? end + 1 : null,
+    truncatedLines,
+  };
+}
+
+export interface StreamPageResult {
+  text: string;
+  start: number;
+  end: number;
+  nextOffset: number | null;
+  truncatedLines: number[];
+}
+
+/**
+ * Stream a file and return the window [offset, offset+limit) WITHOUT loading the
+ * whole file into memory — so ctx_read works on a multi-GB trace, reading only
+ * up to the end of the page and then stopping. Total line count is intentionally
+ * NOT computed (that would need a full scan); end-of-file is signalled by
+ * nextOffset === null. Callers must pre-screen binary / newline-free giant files
+ * (readline would otherwise buffer one unbounded "line").
+ */
+export async function pageFileStream(
+  path: string,
+  offset: number,
+  limit: number,
+  maxBytes: number,
+  maxLineChars: number,
+): Promise<StreamPageResult> {
+  const start = Math.max(1, Math.trunc(offset));
+  const out: string[] = [];
+  const truncatedLines: number[] = [];
+  let bytes = 0;
+  let lineNo = 0;
+  let nextOffset: number | null = null;
+
+  const input = createReadStream(path, { encoding: "utf8" });
+  const rl = createInterface({ input, crlfDelay: Infinity });
+
+  try {
+    for await (const raw of rl) {
+      lineNo += 1;
+      if (lineNo < start) continue;
+
+      let body = raw;
+      if (raw.length > maxLineChars) {
+        const prefix = charSafePrefix(raw, maxLineChars);
+        body = `${prefix}… [+${raw.length - prefix.length} chars]`;
+        truncatedLines.push(lineNo);
+      }
+      const rendered = `${String(lineNo).padStart(6, " ")}: ${body}`;
+      const renderedBytes = Buffer.byteLength(rendered) + 1;
+
+      // Page-budget stop (always emit at least one line so paging never stalls).
+      if (out.length > 0 && bytes + renderedBytes > maxBytes) {
+        nextOffset = lineNo; // this line did not fit — resume here
+        break;
+      }
+      out.push(rendered);
+      bytes += renderedBytes;
+      if (out.length >= limit) {
+        nextOffset = lineNo + 1; // page full — more may follow
+        break;
+      }
+    }
+  } finally {
+    rl.close();
+    input.destroy();
+  }
+
+  return {
+    text: out.length > 0 ? out.join("\n") : "",
+    start: out.length > 0 ? start : 0,
+    end: out.length > 0 ? start + out.length - 1 : 0,
+    nextOffset,
     truncatedLines,
   };
 }
