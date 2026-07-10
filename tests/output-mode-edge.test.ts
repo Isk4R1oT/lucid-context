@@ -35,7 +35,7 @@ describe("summarizeDiagnostics — adversarial", () => {
       exitCode: 0,
       sourceLabel: "execute:shell:diagnostics",
     });
-    expect(s).toContain("No diagnostic lines matched");
+    expect(s).toContain("No error/warn/fail lines matched");
     expect(s).toContain("chars]");
     expect(Buffer.byteLength(s)).toBeLessThan(2_000);
   });
@@ -77,5 +77,16 @@ describe("summarizeDiagnostics — adversarial", () => {
     });
     expect(s).toContain("deprecation warning: use signJWT");
     expect(s).toContain("1 warning lines");
+  });
+
+  test("no-match fallback shows head+tail with a gap marker and honest guidance", () => {
+    const stdout = Array.from({ length: 100 }, (_, i) => `event ${i} nominal`).join("\n");
+    const s = summarizeDiagnostics({ stdout, exitCode: 0, sourceLabel: "execute:shell:diagnostics" });
+    expect(s).toContain("does NOT mean nothing here matters");
+    expect(s).toContain("middle elided"); // gap marker for long output
+    expect(s).toContain("event 0 nominal"); // head shown
+    expect(s).toContain("event 99 nominal"); // tail shown
+    expect(s).not.toContain("event 50 nominal"); // middle NOT shown
+    expect(s).toContain("ctx_search"); // retrieval guidance
   });
 });

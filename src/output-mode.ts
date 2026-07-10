@@ -105,16 +105,43 @@ function formatWindow(lines: StreamLine[], range: WindowRange): string[] {
   return out;
 }
 
-function formatFallbackSample(stdoutLines: StreamLine[], stderrLines: StreamLine[]): string[] {
-  const lines: string[] = [];
-  const sample = [...stderrLines.slice(0, 10), ...stdoutLines.slice(-20)];
-  if (sample.length === 0) {
-    lines.push("(no output)");
-    return lines;
+const FALLBACK_HEAD = 6;
+const FALLBACK_TAIL = 6;
+
+// Head + tail of a stream, with an explicit gap marker when the middle is
+// elided — so a reader is never misled into thinking a tail-only sample is the
+// whole picture. A keyword-less needle often sits in the middle; the honest
+// signal is "the full output is retrievable", not a fabricated representative slice.
+function sampleHeadTail(lines: StreamLine[]): Array<StreamLine | null> {
+  if (lines.length <= FALLBACK_HEAD + FALLBACK_TAIL) return [...lines];
+  return [...lines.slice(0, FALLBACK_HEAD), null, ...lines.slice(-FALLBACK_TAIL)];
+}
+
+function formatFallbackSample(
+  stdoutLines: StreamLine[],
+  stderrLines: StreamLine[],
+  indexed: boolean,
+): string[] {
+  const stderrSample = stderrLines.slice(0, 10);
+  const stdoutSample = sampleHeadTail(stdoutLines);
+  if (stderrSample.length === 0 && stdoutSample.length === 0) {
+    return ["(no output)"];
   }
-  lines.push("No diagnostic lines matched. Output sample:");
-  lines.push("");
-  for (const line of sample) {
+
+  const lines: string[] = [
+    "No error/warn/fail lines matched — this does NOT mean nothing here matters.",
+    indexed
+      ? 'To find specific content: ctx_search(source: …). To read it line by line: re-run with output_mode: "full" (or ctx_read the file).'
+      : 'To read it all, re-run with output_mode: "full".',
+    "",
+    "Sample (head + tail — the middle is NOT shown):",
+    "",
+  ];
+  for (const line of [...stderrSample, ...stdoutSample]) {
+    if (line === null) {
+      lines.push("       … (middle elided) …");
+      continue;
+    }
     const lineNumber = String(line.index + 1).padStart(5, " ");
     lines.push(`${line.stream}:${lineNumber}: ${truncateSampleLine(line.text)}`);
   }
@@ -167,7 +194,7 @@ export function summarizeDiagnostics(
       body.push("");
     }
   } else {
-    body.push(...formatFallbackSample(stdoutLines, stderrLines));
+    body.push(...formatFallbackSample(stdoutLines, stderrLines, Boolean(input.sourceLabel)));
   }
 
   const text = [...header, ...body].join("\n").trimEnd();

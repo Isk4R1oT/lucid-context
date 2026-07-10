@@ -46,7 +46,7 @@ describe("summarizeDiagnostics", () => {
       sourceLabel: "execute:shell:diagnostics",
     });
 
-    expect(summary).toContain("No diagnostic lines matched");
+    expect(summary).toContain("No error/warn/fail lines matched");
     expect(summary).toContain("chars]"); // per-line truncation marker
     expect(Buffer.byteLength(summary)).toBeLessThan(2_000); // giant line did not leak
   });

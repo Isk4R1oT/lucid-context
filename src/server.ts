@@ -2615,8 +2615,8 @@ function readPositiveEnv(name: string, defaultValue: number): number {
 }
 
 const SEARCH_WINDOW_MS = readPositiveEnv("CONTEXT_MODE_SEARCH_WINDOW_MS", 60_000);
-const SEARCH_MAX_RESULTS_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_MAX_RESULTS_AFTER", 3); // after N calls: 1 result per query
-const SEARCH_BLOCK_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_BLOCK_AFTER", 8); // after N calls: refuse, demand batching
+const SEARCH_MAX_RESULTS_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_MAX_RESULTS_AFTER", 8); // after N calls: 1 result per query
+const SEARCH_BLOCK_AFTER = readPositiveEnv("CONTEXT_MODE_SEARCH_BLOCK_AFTER", 20); // after N calls: refuse, demand batching
 
 // #769: progressive throttle bucketed PER agent-context, not machine-global.
 // Concurrent subagents share ONE MCP server process; a single global counter
