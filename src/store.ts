@@ -16,6 +16,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { walkDirectoryDetailed, type WalkOptions } from "./store-directory.js";
+import { looksLikeJSONL } from "./jsonl.js";
 
 // ─────────────────────────────────────────────────────────
 // Types
@@ -883,7 +884,12 @@ export class ContentStore {
       }
     }
     const label = source ?? path ?? "untitled";
-    const chunks = this.#chunkMarkdown(text);
+    // JSONL (agent-eval traces, ndjson logs) has no headings and must not have
+    // an event split across a chunk boundary — chunk it by whole lines, not by
+    // markdown structure, so ctx_search returns complete events.
+    const chunks = looksLikeJSONL(text, path)
+      ? this.#chunkPlainText(text, 20).map((c) => ({ ...c, hasCode: false }))
+      : this.#chunkMarkdown(text);
 
     // Stale detection: store file_path + SHA-256 for file-backed sources
     const filePath = path ?? undefined;
