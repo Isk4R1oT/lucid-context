@@ -1,5 +1,9 @@
 # Lucid Context
 
+[![version](https://img.shields.io/badge/version-1.0.170-blue)](package.json)
+[![tests](https://img.shields.io/badge/tests-4.6k-brightgreen)](tests)
+[![license](https://img.shields.io/badge/license-Elastic--2.0-lightgrey)](LICENSE)
+
 Context optimization for coding agents — keep raw tool output out of the
 conversation while preserving the signals agents actually need: errors,
 warnings, failed tests, build summaries, and searchable session memory.
